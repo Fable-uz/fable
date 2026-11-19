@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fable</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;800&display=swap">
+<style>
+:root{--bg:#062b22;--s:#0d4033;--l:#1b5f4b;--t:#f3f7ef;--m:#9cc4b3;--a:#f2c14e;--k:#2b2100;--r:#ff6b5e;--f:#3fc1b0;
+--ik:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12'%3E%3Cpath d='M12 0l8 6-8 6-8-6z' fill='%23f2c14e'/%3E%3Cpath d='M12 4l2 2-2 2-2-2z' fill='%23062b22'/%3E%3Cpath d='M-3 6l3-3 3 3-3 3zM21 6l3-3 3 3-3 3z' fill='%23ff6b5e'/%3E%3C/svg%3E")}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--t);font:16px/1.5 'Bricolage Grotesque',system-ui,sans-serif}
+main{max-width:480px;margin:auto;padding:18px 14px 96px}
+h1{margin:0 0 12px;font-size:1.6rem;line-height:1.2;font-weight:700;letter-spacing:-.02em}
+p{margin:0 0 10px}
+.brand{font-size:2.1rem;font-weight:800;letter-spacing:-.04em;line-height:1}
+.ik{height:12px;margin:10px 0 6px;background:var(--ik) 0 0/24px 12px repeat-x}
+.m{color:var(--m)}.sm{font-size:.85rem}.er{color:#ff9b8a;min-height:1.4em}
+input,textarea{width:100%;padding:12px 14px;margin:6px 0;color:var(--t);background:var(--s);border:1px solid var(--l);border-radius:12px;font:inherit}
+input::placeholder,textarea::placeholder{color:#78a898}
+textarea{min-height:120px;resize:vertical}
+button{padding:11px 18px;border:0;border-radius:12px;background:var(--a);color:var(--k);font:inherit;font-weight:600;cursor:pointer}
+button.g{background:none;color:var(--t);border:1px solid var(--l)}
+.w{width:100%;margin-top:10px}
+.pill{border-radius:999px;padding:7px 16px}
+:focus-visible{outline:2px solid var(--f);outline-offset:2px}
+.row{display:flex;gap:10px;align-items:center}.row input{margin:0}
+.fx{flex:1;min-width:0}.cut{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ava{display:grid;place-items:center;flex:none;border-radius:50%;color:var(--k);font-weight:800}
+.tabs{display:flex;gap:22px;margin:12px 0 6px;border-bottom:1px solid var(--l)}
+.tabs button{background:none;color:var(--m);padding:8px 0;border-radius:0;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs .on{color:var(--t);border-color:var(--a)}
+.post{padding:16px 0 14px;border-bottom:1px solid var(--l)}
+.ph{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.pimg{display:block;width:calc(100% + 28px);margin:0 -14px 8px;max-height:520px;object-fit:cover}
+.acts{display:flex;gap:16px;margin:6px 0}
+.ic{display:flex;align-items:center;gap:6px;background:none;color:var(--t);padding:4px 0;border-radius:6px}
+.ic.on{color:var(--r)}
+.tx{white-space:pre-wrap;word-break:break-word}
+.cm{margin:2px 0;font-size:.95rem}
+.cin{margin-top:10px}
+.li{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--l);cursor:pointer}
+.bub{max-width:80%;padding:9px 14px;margin:6px 0;background:var(--s);border:1px solid var(--l);border-radius:18px 18px 18px 4px;width:fit-content;word-break:break-word}
+.bub.me{margin-left:auto;background:var(--a);color:var(--k);border-color:var(--a);border-radius:18px 18px 4px 18px}
+.st{display:flex;margin:16px 0;border-block:1px solid var(--l)}
+.st div{flex:1;text-align:center;padding:10px 0;color:var(--m);font-size:.85rem}
+.st b{display:block;color:var(--t);font-size:1.3rem}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:0 -14px 16px}
+.grid img{width:100%;aspect-ratio:1;object-fit:cover}
+.pv{max-width:100%;margin:8px 0}
+.nv{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;background:rgba(6,43,34,.94);backdrop-filter:blur(8px);border-top:1px solid var(--l);padding:4px 8px calc(4px + env(safe-area-inset-bottom))}
+.nv button{flex:1;max-width:96px;background:none;color:var(--m);padding:12px 0 14px;border-radius:0;position:relative;display:grid;place-items:center}
+.nv .on{color:var(--t)}
+.nv .on::after{content:"";position:absolute;bottom:4px;width:7px;height:7px;background:var(--a);transform:rotate(45deg)}
+@media(prefers-reduced-motion:no-preference){
+.ik.in{animation:draw .9s ease-out}
+@keyframes draw{from{clip-path:inset(0 100% 0 0)}}
+.ic.pop svg{animation:pop .35s}
+@keyframes pop{40%{transform:scale(1.35)}}
+}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore,collection,doc,setDoc,addDoc,updateDoc,query,orderBy,limit,where,onSnapshot,arrayUnion,arrayRemove} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const cfg={
+  apiKey:"AIzaSyB_xcYbSsYVIpC_1n_G3_WqNThbC0mijLk",
+  authDomain:"fable-ebe47.firebaseapp.com",
+  projectId:"fable-ebe47",
+  storageBucket:"fable-ebe47.firebasestorage.app",
+  messagingSenderId:"660729973928",
+  appId:"1:660729973928:web:f6211ad82f58b1b70e0069d"
+};
+const app=initializeApp(cfg),au=getAuth(app),fs=getFirestore(app);
+
+const $=s=>document.querySelector(s);
+let uid=null,ready=false,S={users:[],posts:[],msgs:[]},un=[],view='feed',img='',peer='',q='',feedF=0,first=true,popId=0,warned=0;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const ago=t=>{const m=(Date.now()-t)/6e4|0;return m<1?'hozir':m<60?m+' daq':m<1440?(m/60|0)+' soat':(m/1440|0)+' kun'};
+const bad=e=>{console.error(e);if(!warned++)alert("Server xatosi: "+(e.code||e.message))};
+const er=t=>{const e=$('#er');e?e.textContent=t:alert(t)};
+const em=u=>u+'@fable-app.example';
+const AE={'auth/email-already-in-use':"Bu nom band",'auth/invalid-credential':"Nom yoki parol noto'g'ri",'auth/wrong-password':"Nom yoki parol noto'g'ri",'auth/user-not-found':"Nom yoki parol noto'g'ri",'auth/weak-password':"Parol kamida 6 ta belgi bo'lsin",'auth/network-request-failed':"Internet yo'q yoki sekin",'auth/too-many-requests':"Juda ko'p urinish. Birozdan keyin qayta urining"};
+const me=()=>S.users.find(x=>x.id==uid);
+const U=id=>S.users.find(x=>x.id==id)||{id,n:'?',u:'?',fol:[]};
+const fl=id=>U(id).fol||[];
+const followers=id=>S.users.filter(x=>(x.fol||[]).includes(id));
+const thread=id=>S.msgs.filter(m=>(m.f==uid&&m.t==id)||(m.f==id&&m.t==uid)).sort((a,b)=>a.time-b.time);
+const col=s=>['#f2c14e','#ff9a8c','#3fc1b0','#c9b3ff'][[...String(s)].reduce((a,c)=>a+c.charCodeAt(0),0)%4];
+const av=(id,z)=>{const x=U(id);return `<span class="ava" style="width:${z}px;height:${z}px;background:${col(x.u)};font-size:${z*.45}px">${esc((x.n||'?')[0].toUpperCase())}</span>`};
+const svg=(d,f)=>`<svg viewBox="0 0 24 24" width="24" height="24" fill="${f?'currentColor':'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const IC={
+feed:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+new:'<rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8"/>',
+chat:'<path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/>',
+me:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
+heart:'<path d="M12 21s-8-5.2-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 5.8-8 11-8 11z"/>'};
+const ik=()=>'<div class="ik'+(first?' in':'')+'"></div>';
+const blur=()=>{const e=document.activeElement;e&&e.blur&&e.blur()};
+const live=()=>{const e=document.activeElement;if(e&&/INPUT|TEXTAREA/.test(e.tagName)&&e.value&&e.type!='file')return;draw()};
+
+onAuthStateChanged(au,u=>{
+  un.forEach(f=>f());un=[];S={users:[],posts:[],msgs:[]};uid=u?u.uid:null;ready=true;view='feed';
+  if(uid){
+    un.push(onSnapshot(collection(fs,'users'),s=>{S.users=s.docs.map(d=>({id:d.id,...d.data()}));live()},bad));
+    un.push(onSnapshot(query(collection(fs,'posts'),orderBy('t','desc'),limit(60)),s=>{S.posts=s.docs.map(d=>({id:d.id,...d.data()}));live()},bad));
+    un.push(onSnapshot(query(collection(fs,'msgs'),where('members','array-contains',uid)),s=>{S.msgs=s.docs.map(d=>({id:d.id,...d.data()}));live()},bad));
+  }
+  draw();
+});
+
+const go=v=>{view=v;draw()};
+const ff=v=>{feedF=v;draw()};
+const out=()=>signOut(au);
+const srch=v=>{q=v;$('#res').innerHTML=res()};
+const res=()=>{
+  const k=q.trim().toLowerCase().replace(/^@/,'');
+  const us=S.users.filter(a=>a.id!=uid&&((a.u||'').includes(k)||(a.n||'').toLowerCase().includes(k)));
+  return us.length?us.map(a=>{const on=fl(uid).includes(a.id);
+    return `<div class="li" style="cursor:default">${av(a.id,44)}<div class="fx"><b>${esc(a.n)}</b><div class="m sm">@${esc(a.u)} · ${followers(a.id).length} obunachi</div></div><button class="pill${on?' g':''}" onclick="tg('${a.id}')">${on?'Obunasiz ✓':"Obuna bo'lish"}</button></div>`;
+  }).join(''):'<p class="m">Hech kim topilmadi.</p>';
+};
+const tg=async id=>{blur();const on=fl(uid).includes(id);try{await updateDoc(doc(fs,'users',uid),{fol:on?arrayRemove(id):arrayUnion(id)})}catch(e){bad(e)}};
+const auth=async s=>{
+  const n=$('#n').value.trim(),u=$('#u').value.trim().toLowerCase(),p=$('#p').value;
+  if(s){
+    if(!n||!u)return er("Ism va foydalanuvchi nomini kiriting");
+    if(!/^[a-z0-9_.]{3,20}$/.test(u))return er("Nom 3-20 ta kichik harf, raqam, _ yoki . bo'lsin");
+    if(p.length<6)return er("Parol kamida 6 ta belgi bo'lsin");
+  }else if(!u||!p)return er("Nom va parolni kiriting");
+  try{
+    if(s){const c=await createUserWithEmailAndPassword(au,em(u),p);await setDoc(doc(fs,'users',c.user.uid),{n,u,fol:[]})}
+    else await signInWithEmailAndPassword(au,em(u),p);
+  }catch(e){er(AE[e.code]||("Xato: "+(e.code||e.message)))}
+};
+const like=async i=>{blur();const p=S.posts.find(a=>a.id==i);if(!p)return;const on=(p.l||[]).includes(uid);popId=on?0:i;try{await updateDoc(doc(fs,'posts',i),{l:on?arrayRemove(uid):arrayUnion(uid)})}catch(e){bad(e)}};
+const cm=async i=>{const el=$('#c'+i),x=el.value.trim();if(!x)return;el.value='';blur();try{await updateDoc(doc(fs,'posts',i),{c:arrayUnion({u:me().u,x})})}catch(e){bad(e)}};
+const dm=id=>{peer=id;go('dm');window.scrollTo(0,document.body.scrollHeight)};
+const send=async()=>{
+  const el=$('#mg'),x=el.value.trim();if(!x)return;el.value='';el.focus();
+  try{await addDoc(collection(fs,'msgs'),{f:uid,t:peer,x,time:Date.now(),members:[uid,peer]})}catch(e){bad(e)}
+  window.scrollTo(0,document.body.scrollHeight);
+};
+const pick=f=>{
+  const r=new FileReader();
+  r.onload=()=>{const m=new Image();m.onload=()=>{
+    const k=Math.min(1,640/m.width),c=document.createElement('canvas');
+    c.width=m.width*k;c.height=m.height*k;c.getContext('2d').drawImage(m,0,0,c.width,c.height);
+    img=c.toDataURL('image/jpeg',.6);$('#pv').src=img;
+  };m.src=r.result};
+  r.readAsDataURL(f.files[0]);
+};
+const add=async()=>{
+  const x=$('#tx').value.trim();
+  if(!x&&!img)return er("Matn yoki rasm qo'shing");
+  const M=me();
+  try{await addDoc(collection(fs,'posts'),{uid,u:M.u,n:M.n,x,i:img,t:Date.now(),l:[],c:[]});img='';go('feed')}catch(e){bad(e)}
+};
+Object.assign(window,{go,ff,tg,srch,auth,like,cm,dm,send,pick,add,out});
+
+const post=p=>{const l=p.l||[],c=p.c||[],on=l.includes(uid);return `<article class="post">
+<div class="ph">${av(p.uid,38)}<div><b>${esc(p.n)}</b><div class="m sm">@${esc(p.u)} · ${ago(p.t)}</div></div></div>
+${p.i?`<img class="pimg" src="${p.i}" alt="">`:''}
+<div class="acts"><button class="ic${on?' on':''}${popId==p.id?' pop':''}" onclick="like('${p.id}')" aria-label="Yoqdi">${svg(IC.heart,on)}<span>${l.length}</span></button><span class="ic m">${svg(IC.chat)}<span>${c.length}</span></span></div>
+${p.x?`<p class="tx">${esc(p.x)}</p>`:''}
+${c.map(k=>`<p class="cm"><b>${esc(k.u)}</b> ${esc(k.x)}</p>`).join('')}
+<div class="row cin"><input id="c${p.id}" placeholder="Izoh yozing" aria-label="Izoh"><button class="g" onclick="cm('${p.id}')">Yuborish</button></div>
+</article>`};
+
+function draw(){
+  const A=$('#app'),M=me();
+  const fid=document.activeElement&&document.activeElement.id;
+  if(!ready){A.innerHTML=`<div style="padding-top:10vh"><div class="brand" style="font-size:3.2rem">Fable</div>${ik()}<p class="m">Yuklanmoqda…</p></div>`;return}
+  if(!uid){
+    A.innerHTML=`<div style="padding-top:10vh"><div class="brand" style="font-size:3.2rem">Fable</div>${ik()}<p class="m">Kunning ertagini ulashing.</p>
+<input id="n" placeholder="Ismingiz" aria-label="Ismingiz" autocomplete="name"><input id="u" placeholder="Foydalanuvchi nomi" aria-label="Foydalanuvchi nomi" autocomplete="username"><input id="p" type="password" placeholder="Parol" aria-label="Parol" autocomplete="current-password">
+<p id="er" class="er" role="alert"></p>
+<button class="w" onclick="auth(1)">Ro'yxatdan o'tish</button>
+<button class="g w" onclick="auth(0)">Kirish</button></div>`;
+    first=false;return;
+  }
+  if(!M){A.innerHTML=`<div style="padding-top:10vh"><div class="brand" style="font-size:3.2rem">Fable</div>${ik()}<p class="m">Yuklanmoqda…</p><button class="g" onclick="out()">Chiqish</button></div>`;return}
+  let h='';
+  if(view=='feed'){
+    const ps=S.posts.filter(p=>!feedF||p.uid==uid||fl(uid).includes(p.uid));
+    h=`<div class="brand">Fable</div>${ik()}<div class="tabs"><button class="${feedF?'':'on'}" onclick="ff(0)">Hammasi</button><button class="${feedF?'on':''}" onclick="ff(1)">Obunalar</button></div>`+(ps.length?ps.map(post).join(''):feedF?`<p class="m" style="margin-top:16px">Obuna bo'lgan odamlar hali post yozmagan.</p><button class="g" onclick="go('search')">Odam qidirish</button>`:`<p class="m" style="margin-top:16px">Hozircha post yo'q.</p><button onclick="go('new')">Birinchi postni yozing</button>`);
+  }
+  if(view=='search')h=`<h1>Qidiruv</h1><input type="search" id="q" value="${esc(q)}" placeholder="Ism yoki @nom" aria-label="Qidiruv" oninput="srch(this.value)"><div id="res" style="margin-top:8px">${res()}</div>`;
+  if(view=='new')h=`<h1>Yangi post</h1><textarea id="tx" placeholder="Nima o'ylayapsiz?" aria-label="Post matni"></textarea>
+<input type="file" accept="image/*" onchange="pick(this)" aria-label="Rasm tanlash"><img id="pv" class="pv" alt="" ${img?`src="${img}"`:''}>
+<p id="er" class="er" role="alert"></p><button class="w" onclick="add()">Joylash</button>`;
+  if(view=='chat'){
+    const us=S.users.filter(a=>a.id!=uid);
+    h='<h1>Chat</h1>'+(us.length?us.map(a=>{
+      const l=thread(a.id).pop();
+      return `<div class="li" onclick="dm('${a.id}')">${av(a.id,44)}<div class="fx"><b>${esc(a.n)}</b><div class="m sm cut">${l?esc(l.x):'Xabar yozing'}</div></div></div>`;
+    }).join(''):'<p class="m">Hozircha boshqa foydalanuvchi yo\'q. Do\'stlaringiz Fable ga kirib ro\'yxatdan o\'tgach, ular shu yerda chiqadi.</p>');
+  }
+  if(view=='dm'){
+    const t=thread(peer);
+    h=`<div class="row" style="margin-bottom:12px"><button class="g pill" onclick="go('chat')" aria-label="Orqaga">←</button>${av(peer,40)}<h1 style="margin:0">${esc(U(peer).n)}</h1></div>
+<div>${t.length?t.map(m=>`<div class="bub${m.f==uid?' me':''}">${esc(m.x)}</div>`).join(''):'<p class="m">Hali xabar yo\'q. Birinchi bo\'lib yozing.</p>'}</div>
+<div class="row" style="margin-top:12px"><input id="mg" placeholder="Xabar yozing" aria-label="Xabar"><button onclick="send()">Yuborish</button></div>`;
+  }
+  if(view=='me'){
+    const mine=S.posts.filter(p=>p.uid==uid);
+    h=`<div class="row">${av(uid,76)}<div><h1 style="margin:0">${esc(M.n)}</h1><div class="m">@${esc(M.u)}</div></div></div>
+<div class="st"><div><b>${mine.length}</b>Postlar</div><div><b>${followers(uid).length}</b>Obunachilar</div><div><b>${fl(uid).length}</b>Obunalar</div></div>
+<div class="grid">${mine.filter(p=>p.i).map(p=>`<img src="${p.i}" alt="">`).join('')}</div>
+<button class="g w" onclick="out()">Chiqish</button>`;
+  }
+  const t=(v,l)=>`<button class="${view==v||(v=='chat'&&view=='dm')?'on':''}" onclick="go('${v}')" aria-label="${l}">${svg(IC[v])}</button>`;
+  A.innerHTML=h+`<nav class="nv">${t('feed','Bosh sahifa')}${t('search','Qidiruv')}${t('new','Yangi post')}${t('chat','Chat')}${t('me','Profil')}</nav>`;
+  first=false;popId=0;
+  if(fid){const el=$('#'+fid);if(el&&el.tagName=='INPUT'||el&&el.tagName=='TEXTAREA')el.focus()}
+}
+</script>
+</body>
+</html>
