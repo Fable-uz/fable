@@ -45,6 +45,8 @@ button.g{background:none;color:var(--t);border:1px solid var(--l)}
 .st{display:flex;margin:16px 0;border-block:1px solid var(--l)}
 .st div{flex:1;text-align:center;padding:10px 0;color:var(--m);font-size:.85rem}
 .st b{display:block;color:var(--t);font-size:1.3rem}
+.bio{white-space:pre-wrap;word-break:break-word;margin:10px 0 0}
+.ph{cursor:pointer}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:0 -14px 16px}
 .grid img{width:100%;aspect-ratio:1;object-fit:cover}
 .pv{max-width:100%;margin:8px 0}
@@ -78,7 +80,7 @@ const cfg={
 const app=initializeApp(cfg),au=getAuth(app),fs=getFirestore(app);
 
 const $=s=>document.querySelector(s);
-let uid=null,ready=false,S={users:[],posts:[],msgs:[]},un=[],view='feed',img='',peer='',q='',feedF=0,first=true,popId=0,warned=0;
+let uid=null,ready=false,S={users:[],posts:[],msgs:[]},un=[],view='feed',img='',peer='',q='',feedF=0,first=true,popId=0,warned=0,pid='',prev='feed',ep;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const ago=t=>{const m=(Date.now()-t)/6e4|0;return m<1?'hozir':m<60?m+' daq':m<1440?(m/60|0)+' soat':(m/1440|0)+' kun'};
 const bad=e=>{console.error(e);if(!warned++)alert("Server xatosi: "+(e.code||e.message))};
@@ -91,7 +93,8 @@ const fl=id=>U(id).fol||[];
 const followers=id=>S.users.filter(x=>(x.fol||[]).includes(id));
 const thread=id=>S.msgs.filter(m=>(m.f==uid&&m.t==id)||(m.f==id&&m.t==uid)).sort((a,b)=>a.time-b.time);
 const col=s=>['#f2c14e','#ff9a8c','#3fc1b0','#c9b3ff'][[...String(s)].reduce((a,c)=>a+c.charCodeAt(0),0)%4];
-const av=(id,z)=>{const x=U(id);return `<span class="ava" style="width:${z}px;height:${z}px;background:${col(x.u)};font-size:${z*.45}px">${esc((x.n||'?')[0].toUpperCase())}</span>`};
+const avx=(x,z,pic)=>pic?`<img class="ava" src="${pic}" alt="" style="width:${z}px;height:${z}px;object-fit:cover">`:`<span class="ava" style="width:${z}px;height:${z}px;background:${col(x.u)};font-size:${z*.45}px">${esc((x.n||'?')[0].toUpperCase())}</span>`;
+const av=(id,z)=>{const x=U(id);return avx(x,z,x.pic)};
 const svg=(d,f)=>`<svg viewBox="0 0 24 24" width="24" height="24" fill="${f?'currentColor':'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const IC={
 feed:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
@@ -122,7 +125,7 @@ const res=()=>{
   const k=q.trim().toLowerCase().replace(/^@/,'');
   const us=S.users.filter(a=>a.id!=uid&&((a.u||'').includes(k)||(a.n||'').toLowerCase().includes(k)));
   return us.length?us.map(a=>{const on=fl(uid).includes(a.id);
-    return `<div class="li" style="cursor:default">${av(a.id,44)}<div class="fx"><b>${esc(a.n)}</b><div class="m sm">@${esc(a.u)} · ${followers(a.id).length} obunachi</div></div><button class="pill${on?' g':''}" onclick="tg('${a.id}')">${on?'Obunasiz ✓':"Obuna bo'lish"}</button></div>`;
+    return `<div class="li" onclick="pf('${a.id}')">${av(a.id,44)}<div class="fx"><b>${esc(a.n)}</b><div class="m sm">@${esc(a.u)} · ${followers(a.id).length} obunachi</div>${a.bio?`<div class="m sm cut">${esc(a.bio)}</div>`:''}</div><button class="pill${on?' g':''}" onclick="event.stopPropagation();tg('${a.id}')">${on?'Obunasiz ✓':"Obuna bo'lish"}</button></div>`;
   }).join(''):'<p class="m">Hech kim topilmadi.</p>';
 };
 const tg=async id=>{blur();const on=fl(uid).includes(id);try{await updateDoc(doc(fs,'users',uid),{fol:on?arrayRemove(id):arrayUnion(id)})}catch(e){bad(e)}};
@@ -161,10 +164,30 @@ const add=async()=>{
   const M=me();
   try{await addDoc(collection(fs,'posts'),{uid,u:M.u,n:M.n,x,i:img,t:Date.now(),l:[],c:[]});img='';go('feed')}catch(e){bad(e)}
 };
-Object.assign(window,{go,ff,tg,srch,auth,like,cm,dm,send,pick,add,out});
+const pf=id=>{if(id==uid)return go('me');pid=id;prev=view=='user'?prev:view;go('user')};
+const editMe=()=>{ep=undefined;go('edit')};
+const showAv=()=>{const M=me(),el=$('#pavw');if(el)el.innerHTML=avx(M,96,ep===undefined?M.pic:ep)};
+const pickAv=f=>{
+  if(!f.files[0])return;
+  const r=new FileReader();
+  r.onload=()=>{const m=new Image();m.onload=()=>{
+    const z=Math.min(m.width,m.height),c=document.createElement('canvas');
+    c.width=c.height=192;c.getContext('2d').drawImage(m,(m.width-z)/2,(m.height-z)/2,z,z,0,0,192,192);
+    ep=c.toDataURL('image/jpeg',.75);showAv();
+  };m.src=r.result};
+  r.readAsDataURL(f.files[0]);
+};
+const delAv=()=>{ep='';showAv()};
+const back=()=>go(prev);
+const saveP=async()=>{
+  const bio=$('#bio').value.trim().slice(0,120),d={bio};
+  if(ep!==undefined)d.pic=ep;
+  try{await updateDoc(doc(fs,'users',uid),d);ep=undefined;go('me')}catch(e){bad(e)}
+};
+Object.assign(window,{go,ff,tg,srch,auth,like,cm,dm,send,pick,add,out,pf,editMe,pickAv,delAv,saveP,back});
 
 const post=p=>{const l=p.l||[],c=p.c||[],on=l.includes(uid);return `<article class="post">
-<div class="ph">${av(p.uid,38)}<div><b>${esc(p.n)}</b><div class="m sm">@${esc(p.u)} · ${ago(p.t)}</div></div></div>
+<div class="ph" onclick="pf('${p.uid}')">${av(p.uid,38)}<div><b>${esc(p.n)}</b><div class="m sm">@${esc(p.u)} · ${ago(p.t)}</div></div></div>
 ${p.i?`<img class="pimg" src="${p.i}" alt="">`:''}
 <div class="acts"><button class="ic${on?' on':''}${popId==p.id?' pop':''}" onclick="like('${p.id}')" aria-label="Yoqdi">${svg(IC.heart,on)}<span>${l.length}</span></button><span class="ic m">${svg(IC.chat)}<span>${c.length}</span></span></div>
 ${p.x?`<p class="tx">${esc(p.x)}</p>`:''}
@@ -207,14 +230,30 @@ function draw(){
 <div>${t.length?t.map(m=>`<div class="bub${m.f==uid?' me':''}">${esc(m.x)}</div>`).join(''):'<p class="m">Hali xabar yo\'q. Birinchi bo\'lib yozing.</p>'}</div>
 <div class="row" style="margin-top:12px"><input id="mg" placeholder="Xabar yozing" aria-label="Xabar"><button onclick="send()">Yuborish</button></div>`;
   }
+  if(view=='edit')h=`<h1>Profilni tahrirlash</h1>
+<div class="row" style="margin-bottom:12px"><div id="pavw">${avx(M,96,ep===undefined?M.pic:ep)}</div><div class="fx"><input type="file" accept="image/*" onchange="pickAv(this)" aria-label="Profil rasmi">${(ep===undefined?M.pic:ep)?'<button class="g pill" onclick="delAv()">Rasmni olib tashlash</button>':''}</div></div>
+<label class="m sm" for="bio">O'zingiz haqingizda (120 belgigacha)</label>
+<textarea id="bio" maxlength="120" placeholder="Masalan: Samarqanddan. Suratlar va ertaklar.">${esc(M.bio||'')}</textarea>
+<button class="w" onclick="saveP()">Saqlash</button><button class="g w" onclick="go('me')">Bekor qilish</button>`;
+  if(view=='user'){
+    const x=U(pid),mine=S.posts.filter(p=>p.uid==pid),on=fl(uid).includes(pid);
+    h=`<div class="row" style="margin-bottom:12px"><button class="g pill" onclick="back()" aria-label="Orqaga">←</button></div>
+<div class="row">${av(pid,76)}<div><h1 style="margin:0">${esc(x.n)}</h1><div class="m">@${esc(x.u)}</div></div></div>
+${x.bio?`<p class="bio">${esc(x.bio)}</p>`:''}
+<div class="st"><div><b>${mine.length}</b>Postlar</div><div><b>${followers(pid).length}</b>Obunachilar</div><div><b>${fl(pid).length}</b>Obunalar</div></div>
+<div class="row"><button class="pill${on?' g':''}" onclick="tg('${pid}')">${on?'Obunasiz ✓':"Obuna bo'lish"}</button><button class="g pill" onclick="dm('${pid}')">Xabar yozish</button></div>
+<div class="grid" style="margin-top:16px">${mine.filter(p=>p.i).map(p=>`<img src="${p.i}" alt="">`).join('')}</div>`;
+  }
   if(view=='me'){
     const mine=S.posts.filter(p=>p.uid==uid);
     h=`<div class="row">${av(uid,76)}<div><h1 style="margin:0">${esc(M.n)}</h1><div class="m">@${esc(M.u)}</div></div></div>
+${M.bio?`<p class="bio">${esc(M.bio)}</p>`:''}
 <div class="st"><div><b>${mine.length}</b>Postlar</div><div><b>${followers(uid).length}</b>Obunachilar</div><div><b>${fl(uid).length}</b>Obunalar</div></div>
+<button class="g w" style="margin:0 0 16px" onclick="editMe()">Profilni tahrirlash</button>
 <div class="grid">${mine.filter(p=>p.i).map(p=>`<img src="${p.i}" alt="">`).join('')}</div>
 <button class="g w" onclick="out()">Chiqish</button>`;
   }
-  const t=(v,l)=>`<button class="${view==v||(v=='chat'&&view=='dm')?'on':''}" onclick="go('${v}')" aria-label="${l}">${svg(IC[v])}</button>`;
+  const t=(v,l)=>`<button class="${view==v||(v=='chat'&&view=='dm')||(v=='me'&&view=='edit')?'on':''}" onclick="go('${v}')" aria-label="${l}">${svg(IC[v])}</button>`;
   A.innerHTML=h+`<nav class="nv">${t('feed','Bosh sahifa')}${t('search','Qidiruv')}${t('new','Yangi post')}${t('chat','Chat')}${t('me','Profil')}</nav>`;
   first=false;popId=0;
   if(fid){const el=$('#'+fid);if(el&&el.tagName=='INPUT'||el&&el.tagName=='TEXTAREA')el.focus()}
