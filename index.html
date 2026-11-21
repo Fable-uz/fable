@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fable</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#062b22">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;800&display=swap">
 <style>
 :root{--bg:#062b22;--s:#0d4033;--l:#1b5f4b;--t:#f3f7ef;--m:#9cc4b3;--a:#f2c14e;--k:#2b2100;--r:#ff6b5e;--f:#3fc1b0;
@@ -79,6 +84,7 @@ const cfg={
 };
 const app=initializeApp(cfg),au=getAuth(app),fs=getFirestore(app);
 
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 const $=s=>document.querySelector(s);
 let uid=null,ready=false,S={users:[],posts:[],msgs:[]},un=[],view='feed',img='',peer='',q='',feedF=0,first=true,popId=0,warned=0,pid='',prev='feed',ep;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
