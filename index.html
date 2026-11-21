@@ -55,6 +55,30 @@ button.g{background:none;color:var(--t);border:1px solid var(--l)}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:0 -14px 16px}
 .grid img{width:100%;aspect-ratio:1;object-fit:cover}
 .pv{max-width:100%;margin:8px 0}
+.sr{display:flex;gap:14px;overflow-x:auto;padding:12px 14px 6px;margin:0 -14px;scrollbar-width:none}
+.sr::-webkit-scrollbar{display:none}
+.sb{background:none;padding:0;border-radius:0;color:var(--t);display:grid;gap:4px;justify-items:center;width:68px;flex:none;font-weight:400}
+.sb .sm{max-width:68px}
+.ring{display:grid;place-items:center;width:68px;height:68px;border-radius:50%;border:2px solid var(--l);padding:3px}
+.ring.un{border-color:var(--a)}
+.ring.add{border:2px dashed var(--m);font-size:1.8rem;color:var(--m);padding:0}
+#sv{position:fixed;inset:0;z-index:50;background:#000;display:flex;flex-direction:column}
+#sv[hidden]{display:none}
+.sbars{display:flex;gap:4px;padding:calc(10px + env(safe-area-inset-top)) 10px 6px}
+.sbars i{flex:1;height:3px;background:rgba(255,255,255,.3);border-radius:2px;overflow:hidden}
+.sbars b{display:block;height:100%;width:0;background:#fff}
+.sbars .d b{width:100%}
+.sbars .a b{animation:sbar 5s linear forwards}
+@keyframes sbar{from{width:0}to{width:100%}}
+.shd{display:flex;align-items:center;gap:10px;padding:6px 12px;color:#fff;position:relative;z-index:2}
+.sx{background:rgba(255,255,255,.15);color:#fff;padding:6px 12px;border-radius:999px;font-size:.85rem;font-weight:600}
+.sbody{flex:1;display:grid;place-items:center;position:relative;overflow:hidden}
+.sbody img{max-width:100%;max-height:100%;object-fit:contain}
+.sbody.t{background:linear-gradient(160deg,#0d4033,#1b5f4b)}
+.scap{position:absolute;left:0;right:0;bottom:0;margin:0;padding:28px 16px calc(24px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff;text-align:center;word-break:break-word}
+.scap.big{position:static;background:none;font-size:1.7rem;font-weight:700;color:var(--a);padding:24px}
+.stap{position:absolute;top:96px;bottom:0;width:40%;z-index:1}
+.stap.l{left:0}.stap.r{right:0;width:60%}
 .nv{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;background:rgba(6,43,34,.94);backdrop-filter:blur(8px);border-top:1px solid var(--l);padding:4px 8px calc(4px + env(safe-area-inset-bottom))}
 .nv button{flex:1;max-width:96px;background:none;color:var(--m);padding:12px 0 14px;border-radius:0;position:relative;display:grid;place-items:center}
 .nv .on{color:var(--t)}
@@ -69,10 +93,11 @@ button.g{background:none;color:var(--t);border:1px solid var(--l)}
 </head>
 <body>
 <main id="app"></main>
+<div id="sv" hidden></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getFirestore,collection,doc,setDoc,addDoc,updateDoc,query,orderBy,limit,where,onSnapshot,arrayUnion,arrayRemove} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,collection,doc,setDoc,addDoc,updateDoc,deleteDoc,query,orderBy,limit,where,onSnapshot,arrayUnion,arrayRemove} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const cfg={
   apiKey:"AIzaSyB_xcYbSsYVIpC_1n_G3_WqNThbC0mijLk",
@@ -86,7 +111,7 @@ const app=initializeApp(cfg),au=getAuth(app),fs=getFirestore(app);
 
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 const $=s=>document.querySelector(s);
-let uid=null,ready=false,S={users:[],posts:[],msgs:[]},un=[],view='feed',img='',peer='',q='',feedF=0,first=true,popId=0,warned=0,pid='',prev='feed',ep;
+let uid=null,ready=false,S={users:[],posts:[],msgs:[]},un=[],view='feed',img='',peer='',q='',feedF=0,first=true,popId=0,warned=0,pid='',prev='feed',ep,simg='',sv={uid:'',i:0},stT,gc=new Set();
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const ago=t=>{const m=(Date.now()-t)/6e4|0;return m<1?'hozir':m<60?m+' daq':m<1440?(m/60|0)+' soat':(m/1440|0)+' kun'};
 const bad=e=>{console.error(e);if(!warned++)alert("Server xatosi: "+(e.code||e.message))};
@@ -117,7 +142,7 @@ onAuthStateChanged(au,u=>{
   un.forEach(f=>f());un=[];S={users:[],posts:[],msgs:[]};uid=u?u.uid:null;ready=true;view='feed';
   if(uid){
     un.push(onSnapshot(collection(fs,'users'),s=>{S.users=s.docs.map(d=>({id:d.id,...d.data()}));live()},bad));
-    un.push(onSnapshot(query(collection(fs,'posts'),orderBy('t','desc'),limit(60)),s=>{S.posts=s.docs.map(d=>({id:d.id,...d.data()}));live()},bad));
+    un.push(onSnapshot(query(collection(fs,'posts'),orderBy('t','desc'),limit(100)),s=>{S.posts=s.docs.map(d=>({id:d.id,...d.data()}));S.posts.filter(p=>p.s&&p.uid==uid&&Date.now()-p.t>=864e5&&!gc.has(p.id)).forEach(p=>{gc.add(p.id);deleteDoc(doc(fs,'posts',p.id)).catch(()=>{})});live()},bad));
     un.push(onSnapshot(query(collection(fs,'msgs'),where('members','array-contains',uid)),s=>{S.msgs=s.docs.map(d=>({id:d.id,...d.data()}));live()},bad));
   }
   draw();
@@ -190,7 +215,54 @@ const saveP=async()=>{
   if(ep!==undefined)d.pic=ep;
   try{await updateDoc(doc(fs,'users',uid),d);ep=undefined;go('me')}catch(e){bad(e)}
 };
-Object.assign(window,{go,ff,tg,srch,auth,like,cm,dm,send,pick,add,out,pf,editMe,pickAv,delAv,saveP,back});
+const alive=p=>p.s&&Date.now()-p.t<864e5;
+const storiesOf=id=>S.posts.filter(p=>alive(p)&&p.uid==id).sort((a,b)=>a.t-b.t);
+const seen=()=>{try{return JSON.parse(localStorage.getItem('fseen_'+uid)||'[]')}catch(e){return[]}};
+const mark=id=>{try{const a=seen();if(!a.includes(id)){a.push(id);localStorage.setItem('fseen_'+uid,JSON.stringify(a.slice(-300)))}}catch(e){}};
+const unseen=id=>{const a=seen();return storiesOf(id).some(p=>!a.includes(p.id))};
+const srow=()=>{
+  const ids=[...new Set(S.posts.filter(alive).map(p=>p.uid))].sort((a,b)=>unseen(b)-unseen(a));
+  return `<div class="sr"><button class="sb" onclick="go('newstory')" aria-label="Hikoya qo'shish"><span class="ring add">+</span><span class="sm m">Qo'shish</span></button>${ids.map(id=>`<button class="sb" onclick="openS('${id}')"><span class="ring${unseen(id)?' un':''}">${av(id,56)}</span><span class="sm cut">${esc(id==uid?'Siz':(U(id).n||'?').split(' ')[0])}</span></button>`).join('')}</div>`;
+};
+const showS=()=>{
+  clearTimeout(stT);
+  const l=storiesOf(sv.uid),el=$('#sv');
+  if(sv.i>=l.length||sv.i<0)return closeS();
+  const p=l[sv.i];mark(p.id);
+  el.hidden=false;document.body.style.overflow='hidden';
+  el.innerHTML=`<div class="sbars">${l.map((_,k)=>`<i class="${k<sv.i?'d':k==sv.i?'a':''}"><b></b></i>`).join('')}</div>
+<div class="shd">${av(p.uid,36)}<div class="fx"><b>${esc(p.n)}</b> <span class="sm" style="opacity:.7">${ago(p.t)}</span></div>${p.uid==uid?`<button class="sx" onclick="delS('${p.id}')">O'chirish</button>`:''}<button class="sx" onclick="closeS()" aria-label="Yopish">✕</button></div>
+<div class="sbody${p.i?'':' t'}">${p.i?`<img src="${p.i}" alt="">`:''}${p.x?`<p class="scap${p.i?'':' big'}">${esc(p.x)}</p>`:''}</div>
+<div class="stap l" onclick="stepS(-1)"></div><div class="stap r" onclick="stepS(1)"></div>`;
+  stT=setTimeout(()=>stepS(1),5000);
+};
+const openS=id=>{const l=storiesOf(id);if(!l.length)return;const a=seen();let i=l.findIndex(p=>!a.includes(p.id));sv={uid:id,i:i<0?0:i};showS()};
+const stepS=d=>{sv.i=Math.max(0,sv.i+d);showS()};
+const closeS=()=>{clearTimeout(stT);const el=$('#sv');el.hidden=true;el.innerHTML='';document.body.style.overflow='';draw()};
+const delS=async id=>{
+  if(!confirm("Hikoyani o'chirasizmi?"))return;
+  clearTimeout(stT);
+  try{await deleteDoc(doc(fs,'posts',id))}catch(e){bad(e)}
+  S.posts=S.posts.filter(p=>p.id!=id);
+  showS();
+};
+const pickS=f=>{
+  if(!f.files[0])return;
+  const r=new FileReader();
+  r.onload=()=>{const m=new Image();m.onload=()=>{
+    const k=Math.min(1,900/Math.max(m.width,m.height)),c=document.createElement('canvas');
+    c.width=m.width*k;c.height=m.height*k;c.getContext('2d').drawImage(m,0,0,c.width,c.height);
+    simg=c.toDataURL('image/jpeg',.65);$('#pv').src=simg;
+  };m.src=r.result};
+  r.readAsDataURL(f.files[0]);
+};
+const addStory=async()=>{
+  const x=$('#sx').value.trim();
+  if(!x&&!simg)return er("Matn yoki rasm qo'shing");
+  const M=me();
+  try{await addDoc(collection(fs,'posts'),{uid,u:M.u,n:M.n,x,i:simg,t:Date.now(),l:[],c:[],s:1});simg='';go('feed')}catch(e){bad(e)}
+};
+Object.assign(window,{go,ff,tg,srch,auth,like,cm,dm,send,pick,add,out,pf,editMe,pickAv,delAv,saveP,back,openS,stepS,closeS,delS,pickS,addStory});
 
 const post=p=>{const l=p.l||[],c=p.c||[],on=l.includes(uid);return `<article class="post">
 <div class="ph" onclick="pf('${p.uid}')">${av(p.uid,38)}<div><b>${esc(p.n)}</b><div class="m sm">@${esc(p.u)} · ${ago(p.t)}</div></div></div>
@@ -216,8 +288,8 @@ function draw(){
   if(!M){A.innerHTML=`<div style="padding-top:10vh"><div class="brand" style="font-size:3.2rem">Fable</div>${ik()}<p class="m">Yuklanmoqda…</p><button class="g" onclick="out()">Chiqish</button></div>`;return}
   let h='';
   if(view=='feed'){
-    const ps=S.posts.filter(p=>!feedF||p.uid==uid||fl(uid).includes(p.uid));
-    h=`<div class="brand">Fable</div>${ik()}<div class="tabs"><button class="${feedF?'':'on'}" onclick="ff(0)">Hammasi</button><button class="${feedF?'on':''}" onclick="ff(1)">Obunalar</button></div>`+(ps.length?ps.map(post).join(''):feedF?`<p class="m" style="margin-top:16px">Obuna bo'lgan odamlar hali post yozmagan.</p><button class="g" onclick="go('search')">Odam qidirish</button>`:`<p class="m" style="margin-top:16px">Hozircha post yo'q.</p><button onclick="go('new')">Birinchi postni yozing</button>`);
+    const ps=S.posts.filter(p=>!p.s&&(!feedF||p.uid==uid||fl(uid).includes(p.uid)));
+    h=`<div class="brand">Fable</div>${ik()}${srow()}<div class="tabs"><button class="${feedF?'':'on'}" onclick="ff(0)">Hammasi</button><button class="${feedF?'on':''}" onclick="ff(1)">Obunalar</button></div>`+(ps.length?ps.map(post).join(''):feedF?`<p class="m" style="margin-top:16px">Obuna bo'lgan odamlar hali post yozmagan.</p><button class="g" onclick="go('search')">Odam qidirish</button>`:`<p class="m" style="margin-top:16px">Hozircha post yo'q.</p><button onclick="go('new')">Birinchi postni yozing</button>`);
   }
   if(view=='search')h=`<h1>Qidiruv</h1><input type="search" id="q" value="${esc(q)}" placeholder="Ism yoki @nom" aria-label="Qidiruv" oninput="srch(this.value)"><div id="res" style="margin-top:8px">${res()}</div>`;
   if(view=='new')h=`<h1>Yangi post</h1><textarea id="tx" placeholder="Nima o'ylayapsiz?" aria-label="Post matni"></textarea>
@@ -236,13 +308,17 @@ function draw(){
 <div>${t.length?t.map(m=>`<div class="bub${m.f==uid?' me':''}">${esc(m.x)}</div>`).join(''):'<p class="m">Hali xabar yo\'q. Birinchi bo\'lib yozing.</p>'}</div>
 <div class="row" style="margin-top:12px"><input id="mg" placeholder="Xabar yozing" aria-label="Xabar"><button onclick="send()">Yuborish</button></div>`;
   }
+  if(view=='newstory')h=`<h1>Hikoya qo'shish</h1><p class="m sm">Hikoya 24 soatdan keyin o'chadi. Rasm, matn yoki ikkalasi.</p>
+<textarea id="sx" maxlength="140" placeholder="Hikoya matni (140 belgigacha)" aria-label="Hikoya matni"></textarea>
+<input type="file" accept="image/*" onchange="pickS(this)" aria-label="Rasm tanlash"><img id="pv" class="pv" alt="" ${simg?`src="${simg}"`:''}>
+<p id="er" class="er" role="alert"></p><button class="w" onclick="addStory()">Joylash</button><button class="g w" onclick="go('feed')">Bekor qilish</button>`;
   if(view=='edit')h=`<h1>Profilni tahrirlash</h1>
 <div class="row" style="margin-bottom:12px"><div id="pavw">${avx(M,96,ep===undefined?M.pic:ep)}</div><div class="fx"><input type="file" accept="image/*" onchange="pickAv(this)" aria-label="Profil rasmi">${(ep===undefined?M.pic:ep)?'<button class="g pill" onclick="delAv()">Rasmni olib tashlash</button>':''}</div></div>
 <label class="m sm" for="bio">O'zingiz haqingizda (120 belgigacha)</label>
 <textarea id="bio" maxlength="120" placeholder="Masalan: Samarqanddan. Suratlar va ertaklar.">${esc(M.bio||'')}</textarea>
 <button class="w" onclick="saveP()">Saqlash</button><button class="g w" onclick="go('me')">Bekor qilish</button>`;
   if(view=='user'){
-    const x=U(pid),mine=S.posts.filter(p=>p.uid==pid),on=fl(uid).includes(pid);
+    const x=U(pid),mine=S.posts.filter(p=>!p.s&&p.uid==pid),on=fl(uid).includes(pid);
     h=`<div class="row" style="margin-bottom:12px"><button class="g pill" onclick="back()" aria-label="Orqaga">←</button></div>
 <div class="row">${av(pid,76)}<div><h1 style="margin:0">${esc(x.n)}</h1><div class="m">@${esc(x.u)}</div></div></div>
 ${x.bio?`<p class="bio">${esc(x.bio)}</p>`:''}
@@ -251,7 +327,7 @@ ${x.bio?`<p class="bio">${esc(x.bio)}</p>`:''}
 <div class="grid" style="margin-top:16px">${mine.filter(p=>p.i).map(p=>`<img src="${p.i}" alt="">`).join('')}</div>`;
   }
   if(view=='me'){
-    const mine=S.posts.filter(p=>p.uid==uid);
+    const mine=S.posts.filter(p=>!p.s&&p.uid==uid);
     h=`<div class="row">${av(uid,76)}<div><h1 style="margin:0">${esc(M.n)}</h1><div class="m">@${esc(M.u)}</div></div></div>
 ${M.bio?`<p class="bio">${esc(M.bio)}</p>`:''}
 <div class="st"><div><b>${mine.length}</b>Postlar</div><div><b>${followers(uid).length}</b>Obunachilar</div><div><b>${fl(uid).length}</b>Obunalar</div></div>
@@ -259,7 +335,7 @@ ${M.bio?`<p class="bio">${esc(M.bio)}</p>`:''}
 <div class="grid">${mine.filter(p=>p.i).map(p=>`<img src="${p.i}" alt="">`).join('')}</div>
 <button class="g w" onclick="out()">Chiqish</button>`;
   }
-  const t=(v,l)=>`<button class="${view==v||(v=='chat'&&view=='dm')||(v=='me'&&view=='edit')?'on':''}" onclick="go('${v}')" aria-label="${l}">${svg(IC[v])}</button>`;
+  const t=(v,l)=>`<button class="${view==v||(v=='chat'&&view=='dm')||(v=='me'&&view=='edit')||(v=='feed'&&view=='newstory')?'on':''}" onclick="go('${v}')" aria-label="${l}">${svg(IC[v])}</button>`;
   A.innerHTML=h+`<nav class="nv">${t('feed','Bosh sahifa')}${t('search','Qidiruv')}${t('new','Yangi post')}${t('chat','Chat')}${t('me','Profil')}</nav>`;
   first=false;popId=0;
   if(fid){const el=$('#'+fid);if(el&&el.tagName=='INPUT'||el&&el.tagName=='TEXTAREA')el.focus()}
