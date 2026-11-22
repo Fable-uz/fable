@@ -42,7 +42,7 @@ button.g{background:none;color:var(--t);border:1px solid var(--l)}
 .ic{display:flex;align-items:center;gap:6px;background:none;color:var(--t);padding:4px 0;border-radius:6px}
 .ic.on{color:var(--r)}
 .tx{white-space:pre-wrap;word-break:break-word}
-.cm{margin:2px 0;font-size:.95rem}
+.cm{margin:6px 0;font-size:.95rem}
 .cin{margin-top:10px}
 .li{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--l);cursor:pointer}
 .bub{max-width:80%;padding:9px 14px;margin:6px 0;background:var(--s);border:1px solid var(--l);border-radius:18px 18px 18px 4px;width:fit-content;word-break:break-word}
@@ -85,7 +85,16 @@ button.g{background:none;color:var(--t);border:1px solid var(--l)}
 .nv .on::after{content:"";position:absolute;bottom:4px;width:7px;height:7px;background:var(--a);transform:rotate(45deg)}
 .bd{position:absolute;top:6px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--r);color:#fff;font-size:.7rem;font-weight:700;display:grid;place-items:center;line-height:1}
 .bd2{flex:none;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--r);color:#fff;font-size:.8rem;font-weight:700;display:grid;place-items:center}
+.hl{display:flex;align-items:center;gap:2px}
+.lk{font-weight:600;padding:4px 6px}
+.pimg{touch-action:manipulation}
+#sh{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);display:flex;align-items:flex-end}
+#sh[hidden]{display:none}
+.sheet{background:var(--bg);border-top:1px solid var(--l);border-radius:18px 18px 0 0;width:100%;max-width:480px;margin:auto;max-height:70vh;overflow:auto;padding:16px 14px calc(16px + env(safe-area-inset-bottom))}
+.hb{position:fixed;z-index:60;pointer-events:none;color:var(--r)}
 @media(prefers-reduced-motion:no-preference){
+.hb{animation:hb .7s ease-out forwards}
+@keyframes hb{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}30%{transform:translate(-50%,-50%) scale(1.2);opacity:1}100%{transform:translate(-50%,-80%) scale(1);opacity:0}}
 .ik.in{animation:draw .9s ease-out}
 @keyframes draw{from{clip-path:inset(0 100% 0 0)}}
 .ic.pop svg{animation:pop .35s}
@@ -96,6 +105,7 @@ button.g{background:none;color:var(--t);border:1px solid var(--l)}
 <body>
 <main id="app"></main>
 <div id="sv" hidden></div>
+<div id="sh" hidden onclick="if(event.target===this)closeSh()"></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -270,14 +280,33 @@ const addStory=async()=>{
   const M=me();
   try{await addDoc(collection(fs,'posts'),{uid,u:M.u,n:M.n,x,i:simg,t:Date.now(),l:[],c:[],s:1});simg='';go('feed')}catch(e){bad(e)}
 };
-Object.assign(window,{go,ff,tg,srch,auth,like,cm,dm,send,pick,add,out,pf,editMe,pickAv,delAv,saveP,back,openS,stepS,closeS,delS,pickS,addStory});
+const closeSh=()=>{const el=$('#sh');el.hidden=true;el.innerHTML=''};
+const showLikes=id=>{
+  const p=S.posts.find(a=>a.id==id);if(!p)return;
+  const l=p.l||[],el=$('#sh');
+  el.innerHTML=`<div class="sheet"><div class="row" style="margin-bottom:8px"><h1 class="fx" style="margin:0;font-size:1.2rem">Yoqtirganlar</h1><button class="g pill" onclick="closeSh()" aria-label="Yopish">✕</button></div>${l.length?l.map(i=>{const x=U(i);return `<div class="li" onclick="closeSh();pf('${i}')">${av(i,40)}<div class="fx"><b>${esc(x.n)}</b><div class="m sm">@${esc(x.u)}</div></div></div>`}).join(''):'<p class="m">Hali hech kim yoqtirmagan.</p>'}</div>`;
+  el.hidden=false;
+};
+let lastTap=0;
+const tapImg=(e,id)=>{
+  const n=Date.now();
+  if(n-lastTap<320){
+    lastTap=0;
+    const b=document.createElement('div');b.className='hb';b.style.left=e.clientX+'px';b.style.top=e.clientY+'px';
+    b.innerHTML=svg(IC.heart,true).replace('width="24" height="24"','width="84" height="84"');
+    document.body.appendChild(b);setTimeout(()=>b.remove(),750);
+    const p=S.posts.find(a=>a.id==id);
+    if(p&&!(p.l||[]).includes(uid))like(id);
+  }else lastTap=n;
+};
+Object.assign(window,{go,ff,tg,srch,auth,like,cm,dm,send,pick,add,out,pf,editMe,pickAv,delAv,saveP,back,openS,stepS,closeS,delS,pickS,addStory,closeSh,showLikes,tapImg});
 
 const post=p=>{const l=p.l||[],c=p.c||[],on=l.includes(uid);return `<article class="post">
 <div class="ph" onclick="pf('${p.uid}')">${av(p.uid,38)}<div><b>${esc(p.n)}</b><div class="m sm">@${esc(p.u)} · ${ago(p.t)}</div></div></div>
-${p.i?`<img class="pimg" src="${p.i}" alt="">`:''}
-<div class="acts"><button class="ic${on?' on':''}${popId==p.id?' pop':''}" onclick="like('${p.id}')" aria-label="Yoqdi">${svg(IC.heart,on)}<span>${l.length}</span></button><span class="ic m">${svg(IC.chat)}<span>${c.length}</span></span></div>
+${p.i?`<img class="pimg" src="${p.i}" alt="" onclick="tapImg(event,'${p.id}')">`:''}
+<div class="acts"><div class="hl"><button class="ic${on?' on':''}${popId==p.id?' pop':''}" onclick="like('${p.id}')" aria-label="Yoqdi">${svg(IC.heart,on)}</button><button class="ic lk" onclick="showLikes('${p.id}')" aria-label="Yoqtirganlar">${l.length}</button></div><span class="ic m">${svg(IC.chat)}<span>${c.length}</span></span></div>
 ${p.x?`<p class="tx">${esc(p.x)}</p>`:''}
-${c.map(k=>`<p class="cm"><b>${esc(k.u)}</b> ${esc(k.x)}</p>`).join('')}
+${c.map(k=>{const x=S.users.find(a=>a.u==k.u)||{u:k.u,n:k.u};return `<div class="cm row" style="gap:8px;align-items:flex-start"${x.id?` onclick="pf('${x.id}')"`:''}>${avx(x,26,x.pic)}<div><b>${esc(k.u)}</b> ${esc(k.x)}</div></div>`}).join('')}
 <div class="row cin"><input id="c${p.id}" placeholder="Izoh yozing" aria-label="Izoh"><button class="g" onclick="cm('${p.id}')">Yuborish</button></div>
 </article>`};
 
