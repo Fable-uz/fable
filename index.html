@@ -83,6 +83,8 @@ button.g{background:none;color:var(--t);border:1px solid var(--l)}
 .nv button{flex:1;max-width:96px;background:none;color:var(--m);padding:12px 0 14px;border-radius:0;position:relative;display:grid;place-items:center}
 .nv .on{color:var(--t)}
 .nv .on::after{content:"";position:absolute;bottom:4px;width:7px;height:7px;background:var(--a);transform:rotate(45deg)}
+.bd{position:absolute;top:6px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--r);color:#fff;font-size:.7rem;font-weight:700;display:grid;place-items:center;line-height:1}
+.bd2{flex:none;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--r);color:#fff;font-size:.8rem;font-weight:700;display:grid;place-items:center}
 @media(prefers-reduced-motion:no-preference){
 .ik.in{animation:draw .9s ease-out}
 @keyframes draw{from{clip-path:inset(0 100% 0 0)}}
@@ -123,6 +125,12 @@ const U=id=>S.users.find(x=>x.id==id)||{id,n:'?',u:'?',fol:[]};
 const fl=id=>U(id).fol||[];
 const followers=id=>S.users.filter(x=>(x.fol||[]).includes(id));
 const thread=id=>S.msgs.filter(m=>(m.f==uid&&m.t==id)||(m.f==id&&m.t==uid)).sort((a,b)=>a.time-b.time);
+const rk=()=>'fread_'+uid;
+const rd=()=>{try{const o=JSON.parse(localStorage.getItem(rk())||'null');if(o)return o;const n={_:Date.now()};localStorage.setItem(rk(),JSON.stringify(n));return n}catch(e){return{_:0}}};
+const readAt=id=>{const o=rd();return Math.max(o[id]||0,o._||0)};
+const markRead=id=>{try{const o=rd();o[id]=Math.max(Date.now(),...S.msgs.filter(m=>m.f==id).map(m=>m.time));localStorage.setItem(rk(),JSON.stringify(o))}catch(e){}};
+const unread=id=>S.msgs.filter(m=>m.f==id&&m.t==uid&&m.time>readAt(id)).length;
+const totalUnread=()=>S.msgs.filter(m=>m.t==uid&&m.time>readAt(m.f)).length;
 const col=s=>['#f2c14e','#ff9a8c','#3fc1b0','#c9b3ff'][[...String(s)].reduce((a,c)=>a+c.charCodeAt(0),0)%4];
 const avx=(x,z,pic)=>pic?`<img class="ava" src="${pic}" alt="" style="width:${z}px;height:${z}px;object-fit:cover">`:`<span class="ava" style="width:${z}px;height:${z}px;background:${col(x.u)};font-size:${z*.45}px">${esc((x.n||'?')[0].toUpperCase())}</span>`;
 const av=(id,z)=>{const x=U(id);return avx(x,z,x.pic)};
@@ -140,7 +148,7 @@ const live=()=>{const e=document.activeElement;if(e&&/INPUT|TEXTAREA/.test(e.tag
 
 onAuthStateChanged(au,u=>{
   un.forEach(f=>f());un=[];S={users:[],posts:[],msgs:[]};uid=u?u.uid:null;ready=true;view='feed';
-  if(uid){
+  if(uid){rd();
     un.push(onSnapshot(collection(fs,'users'),s=>{S.users=s.docs.map(d=>({id:d.id,...d.data()}));live()},bad));
     un.push(onSnapshot(query(collection(fs,'posts'),orderBy('t','desc'),limit(100)),s=>{S.posts=s.docs.map(d=>({id:d.id,...d.data()}));S.posts.filter(p=>p.s&&p.uid==uid&&Date.now()-p.t>=864e5&&!gc.has(p.id)).forEach(p=>{gc.add(p.id);deleteDoc(doc(fs,'posts',p.id)).catch(()=>{})});live()},bad));
     un.push(onSnapshot(query(collection(fs,'msgs'),where('members','array-contains',uid)),s=>{S.msgs=s.docs.map(d=>({id:d.id,...d.data()}));live()},bad));
@@ -296,14 +304,15 @@ function draw(){
 <input type="file" accept="image/*" onchange="pick(this)" aria-label="Rasm tanlash"><img id="pv" class="pv" alt="" ${img?`src="${img}"`:''}>
 <p id="er" class="er" role="alert"></p><button class="w" onclick="add()">Joylash</button>`;
   if(view=='chat'){
-    const us=S.users.filter(a=>a.id!=uid);
+    const lt=id=>{const l=thread(id).pop();return l?l.time:0};
+    const us=S.users.filter(a=>a.id!=uid).sort((a,b)=>lt(b.id)-lt(a.id));
     h='<h1>Chat</h1>'+(us.length?us.map(a=>{
-      const l=thread(a.id).pop();
-      return `<div class="li" onclick="dm('${a.id}')">${av(a.id,44)}<div class="fx"><b>${esc(a.n)}</b><div class="m sm cut">${l?esc(l.x):'Xabar yozing'}</div></div></div>`;
+      const l=thread(a.id).pop(),n=unread(a.id);
+      return `<div class="li" onclick="dm('${a.id}')">${av(a.id,44)}<div class="fx"><b>${esc(a.n)}</b><div class="${n?'':'m '}sm cut"${n?' style="font-weight:600"':''}>${l?(l.f==uid?'Siz: ':'')+esc(l.x):'Xabar yozing'}</div></div>${n?`<span class="bd2">${n>9?'9+':n}</span>`:''}</div>`;
     }).join(''):'<p class="m">Hozircha boshqa foydalanuvchi yo\'q. Do\'stlaringiz Fable ga kirib ro\'yxatdan o\'tgach, ular shu yerda chiqadi.</p>');
   }
   if(view=='dm'){
-    const t=thread(peer);
+    markRead(peer);const t=thread(peer);
     h=`<div class="row" style="margin-bottom:12px"><button class="g pill" onclick="go('chat')" aria-label="Orqaga">←</button>${av(peer,40)}<h1 style="margin:0">${esc(U(peer).n)}</h1></div>
 <div>${t.length?t.map(m=>`<div class="bub${m.f==uid?' me':''}">${esc(m.x)}</div>`).join(''):'<p class="m">Hali xabar yo\'q. Birinchi bo\'lib yozing.</p>'}</div>
 <div class="row" style="margin-top:12px"><input id="mg" placeholder="Xabar yozing" aria-label="Xabar"><button onclick="send()">Yuborish</button></div>`;
@@ -335,9 +344,10 @@ ${M.bio?`<p class="bio">${esc(M.bio)}</p>`:''}
 <div class="grid">${mine.filter(p=>p.i).map(p=>`<img src="${p.i}" alt="">`).join('')}</div>
 <button class="g w" onclick="out()">Chiqish</button>`;
   }
-  const t=(v,l)=>`<button class="${view==v||(v=='chat'&&view=='dm')||(v=='me'&&view=='edit')||(v=='feed'&&view=='newstory')?'on':''}" onclick="go('${v}')" aria-label="${l}">${svg(IC[v])}</button>`;
+  const t=(v,l)=>`<button class="${view==v||(v=='chat'&&view=='dm')||(v=='me'&&view=='edit')||(v=='feed'&&view=='newstory')?'on':''}" onclick="go('${v}')" aria-label="${l}">${svg(IC[v])}${v=='chat'&&view!='dm'&&totalUnread()?`<span class="bd">${totalUnread()>9?'9+':totalUnread()}</span>`:''}</button>`;
   A.innerHTML=h+`<nav class="nv">${t('feed','Bosh sahifa')}${t('search','Qidiruv')}${t('new','Yangi post')}${t('chat','Chat')}${t('me','Profil')}</nav>`;
   first=false;popId=0;
+  try{const n=totalUnread();if(navigator.setAppBadge){n?navigator.setAppBadge(n):navigator.clearAppBadge()}}catch(e){}
   if(fid){const el=$('#'+fid);if(el&&el.tagName=='INPUT'||el&&el.tagName=='TEXTAREA')el.focus()}
 }
 </script>
