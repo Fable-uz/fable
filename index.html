@@ -92,6 +92,8 @@ button.g{background:none;color:var(--t);border:1px solid var(--l)}
 #sh[hidden]{display:none}
 .sheet{background:var(--bg);border-top:1px solid var(--l);border-radius:18px 18px 0 0;width:100%;max-width:480px;margin:auto;max-height:70vh;overflow:auto;padding:16px 14px calc(16px + env(safe-area-inset-bottom))}
 .hb{position:fixed;z-index:60;pointer-events:none;color:var(--r)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--a);flex:none}
+.bellb{position:relative;padding:8px 10px;border-radius:50%}
 @media(prefers-reduced-motion:no-preference){
 .hb{animation:hb .7s ease-out forwards}
 @keyframes hb{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}30%{transform:translate(-50%,-50%) scale(1.2);opacity:1}100%{transform:translate(-50%,-80%) scale(1);opacity:0}}
@@ -123,7 +125,7 @@ const app=initializeApp(cfg),au=getAuth(app),fs=getFirestore(app);
 
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 const $=s=>document.querySelector(s);
-let uid=null,ready=false,S={users:[],posts:[],msgs:[]},un=[],view='feed',img='',peer='',q='',feedF=0,first=true,popId=0,warned=0,pid='',prev='feed',ep,simg='',sv={uid:'',i:0},stT,gc=new Set();
+let uid=null,ready=false,S={users:[],posts:[],msgs:[]},un=[],view='feed',img='',peer='',q='',feedF=0,first=true,popId=0,warned=0,pid='',prev='feed',ep,simg='',sv={uid:'',i:0},stT,gc=new Set(),ld={u:0,p:0},nOld=0;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const ago=t=>{const m=(Date.now()-t)/6e4|0;return m<1?'hozir':m<60?m+' daq':m<1440?(m/60|0)+' soat':(m/1440|0)+' kun'};
 const bad=e=>{console.error(e);if(!warned++)alert("Server xatosi: "+(e.code||e.message))};
@@ -151,16 +153,17 @@ search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
 new:'<rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8"/>',
 chat:'<path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/>',
 me:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
+bell:'<path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/>',
 heart:'<path d="M12 21s-8-5.2-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 5.8-8 11-8 11z"/>'};
 const ik=()=>'<div class="ik'+(first?' in':'')+'"></div>';
 const blur=()=>{const e=document.activeElement;e&&e.blur&&e.blur()};
 const live=()=>{const e=document.activeElement;if(e&&/INPUT|TEXTAREA/.test(e.tagName)&&e.value&&e.type!='file')return;draw()};
 
 onAuthStateChanged(au,u=>{
-  un.forEach(f=>f());un=[];S={users:[],posts:[],msgs:[]};uid=u?u.uid:null;ready=true;view='feed';
+  un.forEach(f=>f());un=[];ld={u:0,p:0};S={users:[],posts:[],msgs:[]};uid=u?u.uid:null;ready=true;view='feed';
   if(uid){rd();
-    un.push(onSnapshot(collection(fs,'users'),s=>{S.users=s.docs.map(d=>({id:d.id,...d.data()}));live()},bad));
-    un.push(onSnapshot(query(collection(fs,'posts'),orderBy('t','desc'),limit(100)),s=>{S.posts=s.docs.map(d=>({id:d.id,...d.data()}));S.posts.filter(p=>p.s&&p.uid==uid&&Date.now()-p.t>=864e5&&!gc.has(p.id)).forEach(p=>{gc.add(p.id);deleteDoc(doc(fs,'posts',p.id)).catch(()=>{})});live()},bad));
+    un.push(onSnapshot(collection(fs,'users'),s=>{S.users=s.docs.map(d=>({id:d.id,...d.data()}));ld.u=1;scanN();live()},bad));
+    un.push(onSnapshot(query(collection(fs,'posts'),orderBy('t','desc'),limit(100)),s=>{S.posts=s.docs.map(d=>({id:d.id,...d.data()}));S.posts.filter(p=>p.s&&p.uid==uid&&Date.now()-p.t>=864e5&&!gc.has(p.id)).forEach(p=>{gc.add(p.id);deleteDoc(doc(fs,'posts',p.id)).catch(()=>{})});ld.p=1;scanN();live()},bad));
     un.push(onSnapshot(query(collection(fs,'msgs'),where('members','array-contains',uid)),s=>{S.msgs=s.docs.map(d=>({id:d.id,...d.data()}));live()},bad));
   }
   draw();
@@ -238,6 +241,30 @@ const storiesOf=id=>S.posts.filter(p=>alive(p)&&p.uid==id).sort((a,b)=>a.t-b.t);
 const seen=()=>{try{return JSON.parse(localStorage.getItem('fseen_'+uid)||'[]')}catch(e){return[]}};
 const mark=id=>{try{const a=seen();if(!a.includes(id)){a.push(id);localStorage.setItem('fseen_'+uid,JSON.stringify(a.slice(-300)))}}catch(e){}};
 const unseen=id=>{const a=seen();return storiesOf(id).some(p=>!a.includes(p.id))};
+const jget=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k)||'null');return v==null?d:v}catch(e){return d}};
+const jset=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const seenT=()=>jget('fnt_'+uid,0);
+const nUnread=()=>jget('fnl_'+uid,[]).filter(n=>n.t>seenT()).length;
+const scanN=()=>{
+  if(!uid||!ld.u||!ld.p)return;
+  const st=jget('fns_'+uid,null),mine=S.posts.filter(p=>p.uid==uid&&!p.s);
+  const cur={l:{},c:{},f:followers(uid).map(x=>x.id)};
+  mine.forEach(p=>{cur.l[p.id]=p.l||[];cur.c[p.id]=(p.c||[]).length});
+  if(st){
+    const list=jget('fnl_'+uid,[]),have=new Set(list.map(n=>n.k)),now=Date.now();let ch=0;
+    const add=(k,o)=>{if(have.has(k))return;have.add(k);list.unshift({k,t:now,...o});ch=1};
+    cur.f.forEach(f=>{if(!st.f.includes(f))add('f:'+f,{y:'f',from:f})});
+    mine.forEach(p=>{
+      (p.l||[]).forEach(f=>{if(f!=uid&&!(st.l[p.id]||[]).includes(f))add('l:'+f+':'+p.id,{y:'l',from:f,post:p.id})});
+      const pc=st.c[p.id]||0;
+      (p.c||[]).slice(pc).forEach((c,i)=>{const f=S.users.find(x=>x.u==c.u);if(f&&f.id!=uid)add('c:'+f.id+':'+p.id+':'+(pc+i),{y:'c',from:f.id,post:p.id,x:c.x})});
+    });
+    if(ch)jset('fnl_'+uid,list.slice(0,100));
+  }
+  jset('fns_'+uid,cur);
+};
+const openN=()=>{nOld=seenT();jset('fnt_'+uid,Date.now());go('notif')};
+const closeN=()=>{jset('fnt_'+uid,Date.now());go('feed')};
 const srow=()=>{
   const ids=[...new Set(S.posts.filter(alive).map(p=>p.uid))].sort((a,b)=>unseen(b)-unseen(a));
   return `<div class="sr"><button class="sb" onclick="go('newstory')" aria-label="Hikoya qo'shish"><span class="ring add">+</span><span class="sm m">Qo'shish</span></button>${ids.map(id=>`<button class="sb" onclick="openS('${id}')"><span class="ring${unseen(id)?' un':''}">${av(id,56)}</span><span class="sm cut">${esc(id==uid?'Siz':(U(id).n||'?').split(' ')[0])}</span></button>`).join('')}</div>`;
@@ -315,7 +342,7 @@ const tapImg=(e,id)=>{
     if(p&&!(p.l||[]).includes(uid))like(id);
   }else lastTap=n;
 };
-Object.assign(window,{go,ff,tg,srch,auth,like,cm,dm,send,pick,add,out,pf,editMe,pickAv,delAv,saveP,back,openS,stepS,closeS,delS,pickS,addStory,closeSh,showLikes,tapImg,delP,chPw});
+Object.assign(window,{go,ff,tg,srch,auth,like,cm,dm,send,pick,add,out,pf,editMe,pickAv,delAv,saveP,back,openS,stepS,closeS,delS,pickS,addStory,closeSh,showLikes,tapImg,delP,chPw,openN,closeN});
 
 const post=p=>{const l=p.l||[],c=p.c||[],on=l.includes(uid);return `<article class="post">
 <div class="ph" onclick="pf('${p.uid}')">${av(p.uid,38)}<div class="fx"><b>${esc(p.n)}</b><div class="m sm">@${esc(p.u)} · ${ago(p.t)}</div></div>${p.uid==uid?`<button class="g pill sm" onclick="event.stopPropagation();delP('${p.id}')" aria-label="Postni o'chirish">O'chirish</button>`:''}</div>
@@ -342,7 +369,7 @@ function draw(){
   let h='';
   if(view=='feed'){
     const ps=S.posts.filter(p=>!p.s&&(!feedF||p.uid==uid||fl(uid).includes(p.uid)));
-    h=`<div class="brand">Fable</div>${ik()}${srow()}<div class="tabs"><button class="${feedF?'':'on'}" onclick="ff(0)">Hammasi</button><button class="${feedF?'on':''}" onclick="ff(1)">Obunalar</button></div>`+(ps.length?ps.map(post).join(''):feedF?`<p class="m" style="margin-top:16px">Obuna bo'lgan odamlar hali post yozmagan.</p><button class="g" onclick="go('search')">Odam qidirish</button>`:`<p class="m" style="margin-top:16px">Hozircha post yo'q.</p><button onclick="go('new')">Birinchi postni yozing</button>`);
+    h=`<div class="row" style="justify-content:space-between"><div class="brand">Fable</div><button class="g bellb" onclick="openN()" aria-label="Bildirishnomalar">${svg(IC.bell)}${nUnread()?`<span class="bd" style="top:-4px;left:auto;right:-4px">${nUnread()>9?'9+':nUnread()}</span>`:''}</button></div>${ik()}${srow()}<div class="tabs"><button class="${feedF?'':'on'}" onclick="ff(0)">Hammasi</button><button class="${feedF?'on':''}" onclick="ff(1)">Obunalar</button></div>`+(ps.length?ps.map(post).join(''):feedF?`<p class="m" style="margin-top:16px">Obuna bo'lgan odamlar hali post yozmagan.</p><button class="g" onclick="go('search')">Odam qidirish</button>`:`<p class="m" style="margin-top:16px">Hozircha post yo'q.</p><button onclick="go('new')">Birinchi postni yozing</button>`);
   }
   if(view=='search')h=`<h1>Qidiruv</h1><input type="search" id="q" value="${esc(q)}" placeholder="Ism yoki @nom" aria-label="Qidiruv" oninput="srch(this.value)"><div id="res" style="margin-top:8px">${res()}</div>`;
   if(view=='new')h=`<h1>Yangi post</h1><textarea id="tx" placeholder="Nima o'ylayapsiz?" aria-label="Post matni"></textarea>
@@ -361,6 +388,12 @@ function draw(){
     h=`<div class="row" style="margin-bottom:12px"><button class="g pill" onclick="go('chat')" aria-label="Orqaga">←</button>${av(peer,40)}<h1 style="margin:0">${esc(U(peer).n)}</h1></div>
 <div>${t.length?t.map(m=>`<div class="bub${m.f==uid?' me':''}">${esc(m.x)}</div>`).join(''):'<p class="m">Hali xabar yo\'q. Birinchi bo\'lib yozing.</p>'}</div>
 <div class="row" style="margin-top:12px"><input id="mg" placeholder="Xabar yozing" aria-label="Xabar"><button onclick="send()">Yuborish</button></div>`;
+  }
+  if(view=='notif'){
+    const list=jget('fnl_'+uid,[]);
+    h=`<div class="row" style="margin-bottom:12px"><button class="g pill" onclick="closeN()" aria-label="Orqaga">←</button><h1 style="margin:0">Bildirishnomalar</h1></div>`+(list.length?list.map(n=>{
+      const w=n.y=='f'?"sizga obuna bo'ldi":n.y=='l'?"postingizni yoqtirdi ❤️":"izoh yozdi";
+      return `<div class="li" onclick="pf('${n.from}')">${av(n.from,44)}<div class="fx"><div><b>${esc(U(n.from).n)}</b> ${w}</div>${n.x?`<div class="m sm cut">${esc(n.x)}</div>`:''}<div class="m sm">${ago(n.t)}</div></div>${n.t>nOld?'<span class="dot"></span>':''}</div>`}).join(''):'<p class="m">Hozircha bildirishnoma yo\'q. Kimdir yurak bossa, izoh yozsa yoki obuna bo\'lsa, shu yerda chiqadi.</p>');
   }
   if(view=='newstory')h=`<h1>Hikoya qo'shish</h1><p class="m sm">Hikoya 24 soatdan keyin o'chadi. Rasm, matn yoki ikkalasi.</p>
 <textarea id="sx" maxlength="140" placeholder="Hikoya matni (140 belgigacha)" aria-label="Hikoya matni"></textarea>
@@ -392,7 +425,7 @@ ${M.bio?`<p class="bio">${esc(M.bio)}</p>`:''}
 <div class="grid">${mine.filter(p=>p.i).map(p=>`<img src="${p.i}" alt="">`).join('')}</div>
 <button class="g w" onclick="out()">Chiqish</button>`;
   }
-  const t=(v,l)=>`<button class="${view==v||(v=='chat'&&view=='dm')||(v=='me'&&view=='edit')||(v=='feed'&&view=='newstory')?'on':''}" onclick="go('${v}')" aria-label="${l}">${svg(IC[v])}${v=='chat'&&view!='dm'&&totalUnread()?`<span class="bd">${totalUnread()>9?'9+':totalUnread()}</span>`:''}</button>`;
+  const t=(v,l)=>`<button class="${view==v||(v=='chat'&&view=='dm')||(v=='me'&&view=='edit')||(v=='feed'&&(view=='newstory'||view=='notif'))?'on':''}" onclick="go('${v}')" aria-label="${l}">${svg(IC[v])}${v=='chat'&&view!='dm'&&totalUnread()?`<span class="bd">${totalUnread()>9?'9+':totalUnread()}</span>`:''}</button>`;
   A.innerHTML=h+`<nav class="nv">${t('feed','Bosh sahifa')}${t('search','Qidiruv')}${t('new','Yangi post')}${t('chat','Chat')}${t('me','Profil')}</nav>`;
   first=false;popId=0;
   try{const n=totalUnread();if(navigator.setAppBadge){n?navigator.setAppBadge(n):navigator.clearAppBadge()}}catch(e){}
