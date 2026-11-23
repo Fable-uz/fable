@@ -108,7 +108,7 @@ button.g{background:none;color:var(--t);border:1px solid var(--l)}
 <div id="sh" hidden onclick="if(event.target===this)closeSh()"></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut,updatePassword,reauthenticateWithCredential,EmailAuthProvider} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {getFirestore,collection,doc,setDoc,addDoc,updateDoc,deleteDoc,query,orderBy,limit,where,onSnapshot,arrayUnion,arrayRemove} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const cfg={
@@ -280,6 +280,22 @@ const addStory=async()=>{
   const M=me();
   try{await addDoc(collection(fs,'posts'),{uid,u:M.u,n:M.n,x,i:simg,t:Date.now(),l:[],c:[],s:1});simg='';go('feed')}catch(e){bad(e)}
 };
+const delP=async id=>{
+  if(!confirm("Postni o'chirasizmi?"))return;
+  try{await deleteDoc(doc(fs,'posts',id));S.posts=S.posts.filter(p=>p.id!=id);draw()}catch(e){bad(e)}
+};
+const chPw=async()=>{
+  const a=$('#pw0').value,b=$('#pw1').value,m=$('#pwm');
+  const say=(t,ok)=>{m.textContent=t;m.style.color=ok?'var(--f)':''};
+  if(!a||!b)return say("Ikkala parolni kiriting");
+  if(b.length<6)return say("Yangi parol kamida 6 ta belgi bo'lsin");
+  try{
+    const u=au.currentUser;
+    await reauthenticateWithCredential(u,EmailAuthProvider.credential(u.email,a));
+    await updatePassword(u,b);
+    $('#pw0').value='';$('#pw1').value='';say("Parol o'zgartirildi ✓",1);
+  }catch(e){say(e.code=='auth/invalid-credential'||e.code=='auth/wrong-password'?"Hozirgi parol noto'g'ri":(AE[e.code]||("Xato: "+(e.code||e.message))))}
+};
 const closeSh=()=>{const el=$('#sh');el.hidden=true;el.innerHTML=''};
 const showLikes=id=>{
   const p=S.posts.find(a=>a.id==id);if(!p)return;
@@ -299,10 +315,10 @@ const tapImg=(e,id)=>{
     if(p&&!(p.l||[]).includes(uid))like(id);
   }else lastTap=n;
 };
-Object.assign(window,{go,ff,tg,srch,auth,like,cm,dm,send,pick,add,out,pf,editMe,pickAv,delAv,saveP,back,openS,stepS,closeS,delS,pickS,addStory,closeSh,showLikes,tapImg});
+Object.assign(window,{go,ff,tg,srch,auth,like,cm,dm,send,pick,add,out,pf,editMe,pickAv,delAv,saveP,back,openS,stepS,closeS,delS,pickS,addStory,closeSh,showLikes,tapImg,delP,chPw});
 
 const post=p=>{const l=p.l||[],c=p.c||[],on=l.includes(uid);return `<article class="post">
-<div class="ph" onclick="pf('${p.uid}')">${av(p.uid,38)}<div><b>${esc(p.n)}</b><div class="m sm">@${esc(p.u)} · ${ago(p.t)}</div></div></div>
+<div class="ph" onclick="pf('${p.uid}')">${av(p.uid,38)}<div class="fx"><b>${esc(p.n)}</b><div class="m sm">@${esc(p.u)} · ${ago(p.t)}</div></div>${p.uid==uid?`<button class="g pill sm" onclick="event.stopPropagation();delP('${p.id}')" aria-label="Postni o'chirish">O'chirish</button>`:''}</div>
 ${p.i?`<img class="pimg" src="${p.i}" alt="" onclick="tapImg(event,'${p.id}')">`:''}
 <div class="acts"><div class="hl"><button class="ic${on?' on':''}${popId==p.id?' pop':''}" onclick="like('${p.id}')" aria-label="Yoqdi">${svg(IC.heart,on)}</button><button class="ic lk" onclick="showLikes('${p.id}')" aria-label="Yoqtirganlar">${l.length}</button></div><span class="ic m">${svg(IC.chat)}<span>${c.length}</span></span></div>
 ${p.x?`<p class="tx">${esc(p.x)}</p>`:''}
@@ -354,7 +370,10 @@ function draw(){
 <div class="row" style="margin-bottom:12px"><div id="pavw">${avx(M,96,ep===undefined?M.pic:ep)}</div><div class="fx"><input type="file" accept="image/*" onchange="pickAv(this)" aria-label="Profil rasmi">${(ep===undefined?M.pic:ep)?'<button class="g pill" onclick="delAv()">Rasmni olib tashlash</button>':''}</div></div>
 <label class="m sm" for="bio">O'zingiz haqingizda (120 belgigacha)</label>
 <textarea id="bio" maxlength="120" placeholder="Masalan: Samarqanddan. Suratlar va ertaklar.">${esc(M.bio||'')}</textarea>
-<button class="w" onclick="saveP()">Saqlash</button><button class="g w" onclick="go('me')">Bekor qilish</button>`;
+<button class="w" onclick="saveP()">Saqlash</button><button class="g w" onclick="go('me')">Bekor qilish</button>
+<h1 style="font-size:1.15rem;margin:28px 0 6px">Parolni o'zgartirish</h1>
+<input id="pw0" type="password" placeholder="Hozirgi parol" autocomplete="current-password" aria-label="Hozirgi parol"><input id="pw1" type="password" placeholder="Yangi parol (kamida 6 ta belgi)" autocomplete="new-password" aria-label="Yangi parol">
+<p id="pwm" class="er" role="alert"></p><button class="g w" onclick="chPw()">Parolni o'zgartirish</button>`;
   if(view=='user'){
     const x=U(pid),mine=S.posts.filter(p=>!p.s&&p.uid==pid),on=fl(uid).includes(pid);
     h=`<div class="row" style="margin-bottom:12px"><button class="g pill" onclick="back()" aria-label="Orqaga">←</button></div>
