@@ -142,6 +142,7 @@ let uid=null,ready=false,S={users:[],posts:[],msgs:[]},un=[],view='feed',img='',
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const ago=t=>{const m=(Date.now()-t)/6e4|0;return m<1?'hozir':m<60?m+' daq':m<1440?(m/60|0)+' soat':(m/1440|0)+' kun'};
 const bad=e=>{console.error(e);if(!warned++)alert("Server xatosi: "+(e.code||e.message))};
+const msgE=e=>e.code=='permission-denied'?"Ruxsat yo'q. Firebase qoidalarida videos qismi qo'shilmagan bo'lishi mumkin":e.code=='unavailable'?"Internet yo'q yoki sekin":"Joylab bo'lmadi: "+(e.code||e.message);
 const er=t=>{const e=$('#er');e?e.textContent=t:alert(t)};
 const em=u=>u+'@fable-app.example';
 const AE={'auth/email-already-in-use':"Bu nom band",'auth/invalid-credential':"Nom yoki parol noto'g'ri",'auth/wrong-password':"Nom yoki parol noto'g'ri",'auth/user-not-found':"Nom yoki parol noto'g'ri",'auth/weak-password':"Parol kamida 6 ta belgi bo'lsin",'auth/network-request-failed':"Internet yo'q yoki sekin",'auth/too-many-requests':"Juda ko'p urinish. Birozdan keyin qayta urining"};
@@ -264,7 +265,7 @@ const add=async()=>{
   try{
     if(vid){const r=await addDoc(collection(fs,'videos'),{uid,d:vid.d,t:Date.now()});o.vd=r.id;o.dur=vid.dur}
     await addDoc(collection(fs,'posts'),o);img='';vid=null;vs='';go('feed')
-  }catch(e){bad(e)}
+  }catch(e){er(msgE(e));console.error(e)}
 };
 const pf=id=>{if(id==uid)return go('me');pid=id;prev=view=='user'?prev:view;go('user')};
 const editMe=()=>{ep=undefined;go('edit')};
@@ -369,7 +370,7 @@ const addStory=async()=>{
   try{
     if(svid){const r=await addDoc(collection(fs,'videos'),{uid,d:svid.d,t:Date.now()});o.vd=r.id;o.dur=svid.dur}
     await addDoc(collection(fs,'posts'),o);simg='';svid=null;svs='';go('feed')
-  }catch(e){bad(e)}
+  }catch(e){er(msgE(e));console.error(e)}
 };
 const delP=async id=>{
   if(!confirm("Postni o'chirasizmi?"))return;
